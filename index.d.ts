@@ -1,4 +1,4 @@
-import { Middleware, MiddlewareAPI } from 'redux';
+import { AnyAction, Middleware, MiddlewareAPI } from 'redux';
 import { Observable, ObservableInput } from 'rxjs/Observable';
 import { Scheduler } from 'rxjs/Scheduler';
 import { Operator } from 'rxjs/Operator';
@@ -24,29 +24,27 @@ export declare class ActionsObservable<T> extends Observable<T> {
 
   constructor(input$: Observable<T>);
   lift<R>(operator: Operator<T, R>): ActionsObservable<R>;
-  ofType(...key: string[]): ActionsObservable<T>;
-  ofType(...key: any[]): ActionsObservable<T>;
+  ofType<K extends string = string, R = T>(...key: K[]): ActionsObservable<R>;
 }
 
-export declare interface Epic<T, S> {
-  (action$: ActionsObservable<T>, store: MiddlewareAPI<S>): Observable<T>;
+export declare interface Epic<T, S, D = {}, R = T> {
+  (action$: ActionsObservable<T>, store: MiddlewareAPI<S>, dependencies: D): Observable<R>;
 }
 
-export interface EpicMiddleware<T, S> extends Middleware {
-  replaceEpic(nextEpic: Epic<T, S>): void;
+export interface EpicMiddleware<T, S, R = T> extends Middleware {
+  replaceEpic(nextEpic: Epic<T, S, R>): void;
 }
 
 interface Adapter {
-  input: (input$: Observable<any>) => any;
-  output: (output$: any) => Observable<any>;
+  input: <T, U>(input$: Observable<T>) => U;
+  output: <T, R>(output$: T) => Observable<R>;
 }
 
-interface Options {
+interface Options<D = {}> {
   adapter?: Adapter;
-  dependencies?: { [key: string]: any } | any;
+  dependencies?: D;
 }
 
-export declare function createEpicMiddleware<T, S>(rootEpic: Epic<T, S>, options?: Options): EpicMiddleware<T, S>;
+export declare function createEpicMiddleware<T, S, D = {}, R = T>(rootEpic: Epic<T, S, D, R>, options?: Options): EpicMiddleware<T, S>;
 
-export declare function combineEpics<T, S>(...epics: Epic<T, S>[]): Epic<T, S>;
-export declare function combineEpics<E>(...epics: E[]): E;
+export declare function combineEpics<T, S, D = {}, R = T>(...epics: Epic<T, S, D, R>[]): Epic<T, S, D, R>;
